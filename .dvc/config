@@ -1,0 +1,7 @@
+[core]
+    remote = myremote
+[remote "myremote"]
+    url = s3://cifar-remote
+    endpointurl = http://minio:9000
+    access_key_id = minio
+    secret_access_key = minio123

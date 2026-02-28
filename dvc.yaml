@@ -1,0 +1,8 @@
+stages:
+  pull_cifar:
+    cmd: python scripts/pull_cifar_with_dvc.py
+    deps:
+      - scripts/pull_cifar_with_dvc.py
+      - scripts/prepare_cifar_for_dvc.py
+    outs:
+      - data/raw

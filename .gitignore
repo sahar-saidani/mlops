@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.zen/
+artifacts/
+monitoring/
+mlruns/
+.DS_Store
+Thumbs.db
