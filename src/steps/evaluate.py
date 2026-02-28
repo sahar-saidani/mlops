@@ -13,13 +13,13 @@ from zenml.steps import step
 from src.steps.train_cnn_model import TinyCNN
 
 
-@step
-def evaluate(model_path: str, preprocess_cfg_path: str) -> dict:
+@step(enable_cache=False)
+def evaluate(model_path: str, data_root: str, preprocess_cfg_path: str) -> dict:
     cfg = json.loads(Path(preprocess_cfg_path).read_text(encoding="utf-8"))
+    test_idx = json.loads(Path(cfg["test_idx_path"]).read_text(encoding="utf-8"))
 
     batch_size = 128
     num_workers = 0
-    max_test_samples = 2000
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     eval_tf = T.Compose(
@@ -28,8 +28,8 @@ def evaluate(model_path: str, preprocess_cfg_path: str) -> dict:
             T.Normalize(tuple(cfg["mean"]), tuple(cfg["std"])),
         ]
     )
-    full_test_ds = datasets.CIFAR10(root="data/raw", train=False, transform=eval_tf, download=False)
-    test_ds = torch.utils.data.Subset(full_test_ds, list(range(min(max_test_samples, len(full_test_ds)))))
+    full_test_ds = datasets.CIFAR10(root=data_root, train=False, transform=eval_tf, download=False)
+    test_ds = torch.utils.data.Subset(full_test_ds, test_idx)
     test_loader = DataLoader(
         test_ds,
         batch_size=batch_size,

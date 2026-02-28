@@ -1,13 +1,22 @@
 import os
 import json
+import logging
 from pathlib import Path
 
 import mlflow
 from zenml.steps import step
 
 
-@step
-def store_monitoring_artifacts(report: dict, decision: dict) -> str:
+def _store_monitoring(report: dict, decision: dict) -> str:
+    for logger_name in (
+        "mlflow",
+        "mlflow.tracking._tracking_service.client",
+        "mlflow.tracking.fluent",
+        "mlflow.tracking._model_registry.client",
+    ):
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.ERROR)
+        logger.propagate = False
     out_dir = Path("monitoring")
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -18,7 +27,6 @@ def store_monitoring_artifacts(report: dict, decision: dict) -> str:
         "drift_detected": bool(report.get("drift_detected", False)),
         "drift_score": report.get("drift_score"),
         "rows": int(report.get("rows", 0)),
-        "checked_at": report.get("checked_at"),
         "action": decision.get("action", "no_action"),
     }
     summary_path = out_dir / "summary.json"
@@ -39,3 +47,8 @@ def store_monitoring_artifacts(report: dict, decision: dict) -> str:
             mlflow.log_artifact(str(summary_path), artifact_path="monitoring")
 
     return str(report_path)
+
+
+@step(enable_cache=False)
+def store_monitoring_artifacts(report: dict, decision: dict) -> str:
+    return _store_monitoring(report, decision)

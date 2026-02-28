@@ -4,7 +4,7 @@ import subprocess
 from zenml.steps import step
 
 
-@step
+@step(enable_cache=False)
 def trigger_decision(report: dict) -> dict:
     drift = bool(report.get("drift_detected", False))
     retrain = os.getenv("RETRAIN_ON_DRIFT", "false").lower() == "true"

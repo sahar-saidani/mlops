@@ -1,78 +1,124 @@
-# CIFAR-10 CNN MLOps (Docker + Compose)
+# CIFAR-10 TinyCNN MLOps
 
-## Scope implemented
-This repository runs a containerized open-source MLOps workflow with:
-- Git
-- DVC (remote on MinIO / S3 API)
-- MLflow
-- ZenML
-- Docker + Docker Compose
+End-to-end MLOps project for image classification on CIFAR-10 with:
+- ZenML (pipeline orchestration)
+- MLflow (experiment tracking and model registry)
+- Docker Compose (local stack orchestration)
+- MinIO (S3-compatible object storage)
 
-Monitoring is implemented, but drift detection and retrain-on-drift are intentionally disabled.
+The project provides two operational pipelines:
+- `training_pipeline`: train, evaluate, register, and monitor a TinyCNN model
+- `monitoring_pipeline`: collect inference data, compute drift signals, and store monitoring artifacts
 
-## Requirement check (current state)
-### Tools
-- Git: OK
-- DVC + MinIO remote: OK (`.dvc/config` points to `s3://cifar-remote` on MinIO)
-- MLflow: OK
-- ZenML: OK
-- Docker + Compose: OK
-- Evidently drift detection: NOT active (disabled in current code)
+## 1) Project Goals
 
-### `training_pipeline` required steps
-- `ingest_data`: NO (current pipeline uses `pull_data`)
-- `validate_data`: NO
-- `split_data`: NO
-- `preprocess`: NO
-- `train with CNN`: YES (`train_cnn_model`)
-- `evaluate metrics + artifacts`: NO dedicated evaluate step in current training pipeline
-- `register_model via MLflow`: NO dedicated register step in current training pipeline
-- `export_model serving-ready`: NO dedicated export step in current training pipeline
+- Train a lightweight CNN on CIFAR-10
+- Track experiments and model versions in MLflow
+- Produce reproducible artifacts for evaluation and monitoring
+- Run the full workflow locally with Docker Compose
 
-Current `training_pipeline` executes:
-- `start_infra`
-- `pull_data`
-- `train_cnn_model`
-- `monitor_model`
+## 2) Repository Structure
 
-### `monitoring_pipeline` required steps
-- `collect_inference_data`: YES
-- `run_evidently_report`: YES (name kept), but simple report only (no Evidently drift calculation)
-- `trigger_decision`: YES
-- `store_monitoring_artifacts`: YES
-- Drift -> retrain trigger logic: DISABLED (`drift_detected` forced to `false`)
+- `src/pipelines/`: ZenML pipeline definitions
+- `src/steps/`: pipeline steps (data, training, evaluation, monitoring, registration)
+- `run_training_pipeline.py`: training entrypoint with terminal summary
+- `run_monitoring_pipeline.py`: monitoring entrypoint with terminal summary
+- `docker-compose.yml`: local stack and runtime services
+- `docker/`: Dockerfiles for platform services
 
-## Exact commands
-Run from `C:\Users\ASUS\Desktop\mlops`.
+## 3) Current Data Strategy
 
-### 1) Start infrastructure
+The current split uses the full CIFAR-10 dataset:
+- Train: 50,000 samples
+- Validation: 0 samples
+- Test: 10,000 samples
+
+Implementation:
+- `src/steps/split_data.py` writes:
+  - `artifacts/splits/train_idx.json` (0..49999)
+  - `artifacts/splits/val_idx.json` (empty)
+  - `artifacts/splits/test_idx.json` (0..9999)
+
+## 4) Training Pipeline
+
+Pipeline file: `src/pipelines/training_pipeline.py`
+
+Step sequence:
+1. `start_infra`
+2. `ingest_data`
+3. `validate_data`
+4. `split_data`
+5. `preprocess`
+6. `train_cnn_model`
+7. `evaluate`
+8. `build_training_params`
+9. `register_model`
+10. `monitor_model`
+
+Key outputs:
+- `artifacts/tiny_cnn.pt`
+- `artifacts/metrics/confusion_matrix.png`
+- `artifacts/metrics/classification_report.txt`
+- `artifacts/monitoring_status.txt` (status + accuracy)
+- `monitoring/reference.csv`
+- `monitoring/inference_log.csv`
+
+## 5) Monitoring Pipeline
+
+Pipeline file: `src/pipelines/monitoring_pipeline.py`
+
+Step sequence:
+1. `collect_inference_data`
+2. `run_evidently_report`
+3. `trigger_decision`
+4. `store_monitoring_artifacts`
+
+Key outputs:
+- `monitoring/collected_inference_log.csv`
+- `monitoring/report.html`
+- `monitoring/summary.json`
+
+`run_evidently_report` currently computes a lightweight drift signal (probability shift + label distribution shift) and returns:
+- `drift_detected`
+- `drift_score`
+- `rows`
+
+## 6) Run with Docker Compose
+
+From project root (`C:\Users\ASUS\Desktop\mlops`):
+
+Start infrastructure:
 ```powershell
 docker compose up -d minio init-minio mlflow zenml
 ```
 
-### 2) Pull data with DVC
-```powershell
-docker exec zenml_dashboard python scripts/pull_cifar_with_dvc.py
-```
-
-### 3) Run training pipeline
+Run training:
 ```powershell
 docker compose up training
 ```
 
-### 4) Run monitoring pipeline
+Run monitoring:
 ```powershell
 docker compose up monitoring
 ```
 
-### 5) Retrain on drift
-Currently disabled by design in this repository.
-
-## Service URLs
+Service URLs:
 - MLflow: `http://127.0.0.1:5000`
 - MinIO Console: `http://127.0.0.1:9001`
 - ZenML Dashboard: `http://127.0.0.1:8237`
 
-## Data policy
-- Dataset files are excluded from Git (`data/` ignored in `.gitignore`)
-- DVC is used for data pull/versioning workflow
+## 7) Terminal Summaries
+
+After each run:
+- `run_training_pipeline.py` prints:
+  - generated/updated files
+  - `val_accuracy` and `test_accuracy`
+- `run_monitoring_pipeline.py` prints:
+  - generated/updated monitoring files
+  - drift summary (`drift_detected`, `drift_score`, `rows`, `action`)
+
+## 8) Notes
+
+- Model registry name: `cifar10-cnn`
+- Training/monitoring steps that must reflect latest state are configured with cache disabled where needed
+- Docker compose is configured to reduce noisy runtime warnings

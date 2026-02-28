@@ -55,11 +55,12 @@ services:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: minio
       AWS_SECRET_ACCESS_KEY: minio123
-      EPOCHS: "3"
-      BATCH_SIZE: "128"
-      NUM_WORKERS: "0"
-      MAX_TRAIN_SAMPLES: "12000"
-      MAX_VAL_SAMPLES: "2000"
+      GIT_PYTHON_REFRESH: quiet
+      PYTHONWARNINGS: ignore
+      EPOCHS: "25"
+      BATCH_SIZE: "64"
+      NUM_WORKERS: "2"
+    command: ["python", "run_training_pipeline.py"]
     volumes:
       - .:/app
 
@@ -73,14 +74,17 @@ services:
       - minio
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      GIT_PYTHON_REFRESH: quiet
+      PYTHONWARNINGS: ignore
       RETRAIN_ON_DRIFT: "false"
+    command: ["python", "run_monitoring_pipeline.py"]
     volumes:
       - .:/app
 
   zenml:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile_zenml
     container_name: zenml_dashboard
     working_dir: /app
     depends_on:

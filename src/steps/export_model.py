@@ -6,7 +6,7 @@ from zenml.steps import step
 from src.steps.train_cnn_model import TinyCNN
 
 
-@step
+@step(enable_cache=False)
 def export_model(model_path: str) -> str:
     model = TinyCNN()
     model.load_state_dict(torch.load(model_path, map_location="cpu"))

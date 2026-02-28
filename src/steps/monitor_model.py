@@ -4,11 +4,12 @@ import mlflow
 from zenml.steps import step
 
 
-@step
-def monitor_model(model_path: str, accuracy: float, mlflow_tracking_uri: str) -> str:
+@step(enable_cache=False)
+def monitor_model(model_path: str, metrics: dict, mlflow_tracking_uri: str) -> str:
     """Log a simple monitoring signal and save status output."""
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     mlflow.set_experiment("zenml-fast-cnn-monitoring")
+    accuracy = float(metrics.get("accuracy", 0.0))
 
     status = "healthy" if accuracy >= 0.60 else "needs_retraining"
 

@@ -4,7 +4,7 @@ from pathlib import Path
 from zenml.steps import step
 
 
-@step
+@step(enable_cache=False)
 def collect_inference_data() -> str:
     monitoring_dir = Path("monitoring")
     monitoring_dir.mkdir(parents=True, exist_ok=True)

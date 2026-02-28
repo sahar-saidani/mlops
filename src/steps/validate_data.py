@@ -3,8 +3,7 @@ from pathlib import Path
 from zenml.steps import step
 
 
-@step
-def validate_data(data_root: str) -> str:
+def _validate_cifar_layout(data_root: str) -> str:
     folder = Path(data_root) / "cifar-10-batches-py"
     required = [
         folder / "data_batch_1",
@@ -15,3 +14,8 @@ def validate_data(data_root: str) -> str:
     if missing:
         raise FileNotFoundError(f"Missing CIFAR-10 files: {missing}")
     return data_root
+
+
+@step
+def validate_data(data_root: str) -> str:
+    return _validate_cifar_layout(data_root)

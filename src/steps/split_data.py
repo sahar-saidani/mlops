@@ -1,15 +1,24 @@
 import json
 from pathlib import Path
 
-from sklearn.model_selection import train_test_split
 from zenml.steps import step
 
+TRAIN_SAMPLES = 50_000
+TEST_SAMPLES = 10_000
 
-@step
-def split_data(data_root: str, seed: int = 42) -> tuple[str, str, str]:
-    indices = list(range(50000))
-    train_idx, val_idx = train_test_split(indices, test_size=0.1, random_state=seed, shuffle=True)
-    test_idx = list(range(10000))
+
+@step(enable_cache=False)
+def split_data(data_root: str) -> tuple[str, str, str]:
+    """Use the full CIFAR-10 split: all train samples, no validation split, all test samples."""
+    cifar_dir = Path(data_root) / "cifar-10-batches-py"
+    required = [cifar_dir / f"data_batch_{i}" for i in range(1, 6)] + [cifar_dir / "test_batch"]
+    missing = [str(p) for p in required if not p.exists()]
+    if missing:
+        raise FileNotFoundError(f"Missing CIFAR-10 files: {missing}")
+
+    train_idx = list(range(TRAIN_SAMPLES))
+    val_idx: list[int] = []
+    test_idx = list(range(TEST_SAMPLES))
 
     out_dir = Path("artifacts/splits")
     out_dir.mkdir(parents=True, exist_ok=True)
