@@ -82,7 +82,7 @@ def train_cnn_model(dataset_path: str, mlflow_tracking_uri: str) -> Tuple[str, f
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    epochs = 3
+    epochs = 40
     with mlflow.start_run(run_name="tiny-cnn"):
         mlflow.log_params({"epochs": epochs, "batch_size": 128, "lr": 1e-3})
 
