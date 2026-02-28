@@ -3,12 +3,12 @@ from pathlib import Path
 import torch
 from zenml.steps import step
 
-from src.models.cnn import CNN
+from src.steps.train_cnn_model import TinyCNN
 
 
 @step
 def export_model(model_path: str) -> str:
-    model = CNN()
+    model = TinyCNN()
     model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
 

@@ -10,7 +10,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as T
 from zenml.steps import step
 
-from src.models.cnn import CNN
+from src.steps.train_cnn_model import TinyCNN
 
 
 @step
@@ -38,7 +38,7 @@ def evaluate(model_path: str, preprocess_cfg_path: str) -> dict:
         pin_memory=(device == "cuda"),
     )
 
-    model = CNN().to(device)
+    model = TinyCNN().to(device)
     state = torch.load(model_path, map_location=device)
     model.load_state_dict(state)
     model.eval()
@@ -85,9 +85,6 @@ def evaluate(model_path: str, preprocess_cfg_path: str) -> dict:
     df["true_label"] = y_true
 
     df.to_csv(monitoring_dir / "reference.csv", index=False)
-    drift_df = df.copy()
-    for col in prob_cols:
-        drift_df[col] = (drift_df[col] * 0.8) + 0.2 / 10.0
-    drift_df.to_csv(monitoring_dir / "inference_log.csv", index=False)
+    df.to_csv(monitoring_dir / "inference_log.csv", index=False)
 
     return {"accuracy": float(acc), "f1_macro": float(f1)}

@@ -9,9 +9,9 @@ from src.steps.trigger_decision import trigger_decision
 @pipeline
 def monitoring_pipeline() -> None:
     inference_path = collect_inference_data()
-    drift, html = run_evidently_report(inference_path)
-    trigger_decision(drift)
-    store_monitoring_artifacts(html, drift)
+    report = run_evidently_report(inference_path)
+    decision = trigger_decision(report)
+    store_monitoring_artifacts(report, decision)
 
 
 if __name__ == "__main__":

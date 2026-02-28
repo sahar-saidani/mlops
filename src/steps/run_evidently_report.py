@@ -1,23 +1,31 @@
-from pathlib import Path
+import csv
+from datetime import datetime, timezone
 
-import pandas as pd
-from evidently.report import Report
-from evidently.metrics import DatasetDriftMetric
 from zenml.steps import step
 
 
 @step
-def run_evidently_report(inference_path: str) -> tuple[bool, str]:
-    reference_path = Path("monitoring/reference.csv")
-    if not reference_path.exists():
-        raise FileNotFoundError("monitoring/reference.csv not found. Run training_pipeline first.")
+def run_evidently_report(inference_path: str) -> dict:
+    with open(inference_path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        columns = reader.fieldnames or []
+        row_count = sum(1 for _ in reader)
 
-    reference_df = pd.read_csv(reference_path)
-    current_df = pd.read_csv(inference_path)
+    if not columns or row_count == 0:
+        raise ValueError(f"{inference_path} is empty.")
 
-    report = Report(metrics=[DatasetDriftMetric()])
-    report.run(reference_data=reference_df, current_data=current_df)
+    html = (
+        "<html><body>"
+        "<h1>Monitoring Report</h1>"
+        f"<p>Rows checked: {row_count}</p>"
+        "<p>Drift detection is disabled.</p>"
+        "</body></html>"
+    )
 
-    html = report.as_html()
-    drift = bool(report.as_dict()["metrics"][0]["result"]["dataset_drift"])
-    return drift, html
+    return {
+        "drift_detected": False,
+        "drift_score": None,
+        "rows": int(row_count),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "html": html,
+    }

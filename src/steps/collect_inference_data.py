@@ -1,6 +1,6 @@
+import csv
+import shutil
 from pathlib import Path
-
-import pandas as pd
 from zenml.steps import step
 
 
@@ -13,11 +13,33 @@ def collect_inference_data() -> str:
     reference = monitoring_dir / "reference.csv"
 
     if not inference.exists() and reference.exists():
-        pd.read_csv(reference).to_csv(inference, index=False)
+        shutil.copyfile(reference, inference)
 
     if not inference.exists():
         raise FileNotFoundError("monitoring/inference_log.csv not found. Run training_pipeline first.")
 
+    with inference.open("r", encoding="utf-8", newline="") as f:
+        inference_reader = csv.DictReader(f)
+        inference_columns = inference_reader.fieldnames or []
+        inference_rows = sum(1 for _ in inference_reader)
+
+    if not inference_columns or inference_rows == 0:
+        raise ValueError("monitoring/inference_log.csv is empty.")
+
+    if reference.exists():
+        with reference.open("r", encoding="utf-8", newline="") as f:
+            reference_reader = csv.DictReader(f)
+            reference_columns = reference_reader.fieldnames or []
+            reference_rows = sum(1 for _ in reference_reader)
+
+        if not reference_columns or reference_rows == 0:
+            raise ValueError("monitoring/reference.csv is empty.")
+        missing_columns = sorted(set(reference_columns) - set(inference_columns))
+        if missing_columns:
+            raise ValueError(
+                f"monitoring/inference_log.csv is missing required columns: {missing_columns}"
+            )
+
     collected = monitoring_dir / "collected_inference_log.csv"
-    pd.read_csv(inference).to_csv(collected, index=False)
+    shutil.copyfile(inference, collected)
     return str(collected)

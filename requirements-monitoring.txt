@@ -1,0 +1,2 @@
+zenml[server]==0.93.3
+mlflow==2.15.1

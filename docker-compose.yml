@@ -66,7 +66,7 @@ services:
   monitoring:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile.monitor
     working_dir: /app
     depends_on:
       - mlflow

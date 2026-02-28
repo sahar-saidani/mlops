@@ -7,7 +7,7 @@ import mlflow.pytorch
 import torch
 from zenml.steps import step
 
-from src.models.cnn import CNN
+from src.steps.train_cnn_model import TinyCNN
 
 
 @step
@@ -15,7 +15,7 @@ def register_model(model_path: str, metrics: dict, training_params: dict, model_
     mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns"))
     mlflow.set_experiment("cifar10-training")
 
-    model = CNN()
+    model = TinyCNN()
     model.load_state_dict(torch.load(model_path, map_location="cpu"))
     model.eval()
 
