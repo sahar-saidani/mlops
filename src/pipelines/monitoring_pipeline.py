@@ -15,4 +15,5 @@ def monitoring_pipeline() -> None:
 
 
 if __name__ == "__main__":
+    
     monitoring_pipeline()

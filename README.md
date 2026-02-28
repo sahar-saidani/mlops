@@ -1,88 +1,78 @@
-# MLOps Project Documentation
+# CIFAR-10 CNN MLOps (Docker + Compose)
 
-This repository includes:
+## Scope implemented
+This repository runs a containerized open-source MLOps workflow with:
+- Git
+- DVC (remote on MinIO / S3 API)
+- MLflow
+- ZenML
+- Docker + Docker Compose
 
-1. A minimal **quickstart ZenML pipeline** with 4 steps:
-   - `start_infra`
-   - `pull_data`
-   - `train_cnn_model`
-   - `monitor_model`
-2. A complete CIFAR-10 stack (Docker + MinIO + MLflow + ZenML + DVC + Evidently).
+Monitoring is implemented, but drift detection and retrain-on-drift are intentionally disabled.
 
-The quickstart path is the fastest way to validate the whole pipeline logic.
+## Requirement check (current state)
+### Tools
+- Git: OK
+- DVC + MinIO remote: OK (`.dvc/config` points to `s3://cifar-remote` on MinIO)
+- MLflow: OK
+- ZenML: OK
+- Docker + Compose: OK
+- Evidently drift detection: NOT active (disabled in current code)
 
-## 1) Exact Commands To Run (Submission Flow)
+### `training_pipeline` required steps
+- `ingest_data`: NO (current pipeline uses `pull_data`)
+- `validate_data`: NO
+- `split_data`: NO
+- `preprocess`: NO
+- `train with CNN`: YES (`train_cnn_model`)
+- `evaluate metrics + artifacts`: NO dedicated evaluate step in current training pipeline
+- `register_model via MLflow`: NO dedicated register step in current training pipeline
+- `export_model serving-ready`: NO dedicated export step in current training pipeline
 
-Run from: `C:\Users\ASUS\Desktop\mlops`
+Current `training_pipeline` executes:
+- `start_infra`
+- `pull_data`
+- `train_cnn_model`
+- `monitor_model`
 
-### Start infra
+### `monitoring_pipeline` required steps
+- `collect_inference_data`: YES
+- `run_evidently_report`: YES (name kept), but simple report only (no Evidently drift calculation)
+- `trigger_decision`: YES
+- `store_monitoring_artifacts`: YES
+- Drift -> retrain trigger logic: DISABLED (`drift_detected` forced to `false`)
+
+## Exact commands
+Run from `C:\Users\ASUS\Desktop\mlops`.
+
+### 1) Start infrastructure
 ```powershell
 docker compose up -d minio init-minio mlflow zenml
 ```
 
-### Pull data
+### 2) Pull data with DVC
 ```powershell
 docker exec zenml_dashboard python scripts/pull_cifar_with_dvc.py
 ```
 
-### Train
+### 3) Run training pipeline
 ```powershell
-docker exec zenml_dashboard python run_training_pipeline.py
+docker compose up training
 ```
 
-### Monitor
+### 4) Run monitoring pipeline
 ```powershell
-docker exec zenml_dashboard python run_monitoring_pipeline.py
+docker compose up monitoring
 ```
 
-## 2) Fast Working Pipeline (under 1 minute)
+### 5) Retrain on drift
+Currently disabled by design in this repository.
 
-This is the tested quick path:
-
-```powershell
-docker compose run --rm training python run_quickstart_pipeline.py
-```
-
-Recent test result on this machine:
-- Pipeline total duration: ~21s
-- `train_cnn_model` duration: ~16s
-
-## 3) Local Python Alternative
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
-zenml init
-python run_quickstart_pipeline.py
-```
-
-## 4) UI Links
-
+## Service URLs
 - MLflow: `http://127.0.0.1:5000`
-- MinIO console: `http://127.0.0.1:9001`
-- ZenML Dashboard (if started): `http://127.0.0.1:8237`
+- MinIO Console: `http://127.0.0.1:9001`
+- ZenML Dashboard: `http://127.0.0.1:8237`
 
-## 5) Short Video Demo Script (2 to 5 min)
-
-Record this exact sequence:
-
-1. Open terminal in `C:\Users\ASUS\Desktop\mlops`
-2. Run:
-   - `docker compose up -d minio init-minio mlflow`
-3. Show containers up:
-   - `docker ps`
-4. Run training (quickstart):
-   - `docker compose run --rm training python run_quickstart_pipeline.py`
-5. Show ZenML step logs in terminal:
-   - `start_infra`, `pull_data`, `train_cnn_model`, `monitor_model`
-6. Open MLflow UI in browser (`http://127.0.0.1:5000`)
-7. Show:
-   - experiment `zenml-fast-cnn`
-   - logged metric `test_accuracy`
-   - model artifact
-8. (Monitoring evidence) show monitor output in run logs and MLflow run:
-   - `observed_accuracy`
-   - `status=healthy` / `needs_retraining`
-9. End video with final successful pipeline status.
+## Data policy
+- Dataset files are excluded from Git (`data/` ignored in `.gitignore`)
+- DVC is used for data pull/versioning workflow
