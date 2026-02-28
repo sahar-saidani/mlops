@@ -1,11 +1,9 @@
 from zenml.pipelines import pipeline
 
-from src.steps.quickstart_steps import (
-    monitor_model,
-    pull_data,
-    start_infra,
-    train_cnn_model,
-)
+from src.steps.monitor_model import monitor_model
+from src.steps.pull_data import pull_data
+from src.steps.start_infra import start_infra
+from src.steps.train_cnn_model import train_cnn_model
 
 
 @pipeline
