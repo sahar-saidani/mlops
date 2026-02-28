@@ -17,18 +17,13 @@ class TinyCNN(nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.features = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.Conv2d(1, 8, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
         )
         self.classifier = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(32 * 2 * 2, 64),
-            nn.ReLU(),
-            nn.Linear(64, 10),
+            nn.Linear(8 * 4 * 4, 10),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -87,7 +82,7 @@ def train_cnn_model(dataset_path: str, mlflow_tracking_uri: str) -> Tuple[str, f
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    epochs = 8
+    epochs = 3
     with mlflow.start_run(run_name="tiny-cnn"):
         mlflow.log_params({"epochs": epochs, "batch_size": 128, "lr": 1e-3})
 
