@@ -30,13 +30,13 @@ The project provides two operational pipelines:
 
 The current split uses the full CIFAR-10 dataset:
 - Train: 50,000 samples
-- Validation: 0 samples
+- Validation: 10,000 samples
 - Test: 10,000 samples
 
 Implementation:
 - `src/steps/split_data.py` writes:
   - `artifacts/splits/train_idx.json` (0..49999)
-  - `artifacts/splits/val_idx.json` (empty)
+  - `artifacts/splits/val_idx.json` (0..9999)
   - `artifacts/splits/test_idx.json` (0..9999)
 
 ## 4) Training Pipeline
